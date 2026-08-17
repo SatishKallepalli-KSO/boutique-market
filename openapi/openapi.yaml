@@ -1,0 +1,654 @@
+openapi: 3.1.0
+info:
+  title: Boutique Market API
+  version: 0.1.0
+  summary: White-label boutique commerce — GraphQL storefront plus a few REST helpers
+  description: |
+    Boutique Market is a **single-tenant** shop (one deploy = one boutique).
+    Branding is data (`store` query / `updateStore` mutation), not hardcoded names.
+
+    Most product, cart, checkout, and admin traffic is **GraphQL** at `POST /graphql`.
+    REST exists for health, image upload/serve, and the payment sandbox callback.
+
+    Money is integer **paise** (₹1 = 100). Never send rupees as floats.
+
+    **Auth:** JWT from `login` / `register`. Send `Authorization: Bearer <token>`.
+    Admin mutations require `role: ADMIN`.
+  contact:
+    name: Boutique Market
+  license:
+    name: UNLICENSED
+
+servers:
+  - url: http://localhost:4000
+    description: Local API
+  - url: http://localhost:5177
+    description: Vite dev (proxies /graphql and /api to :4000)
+  - url: https://boutique-market-k7m7.onrender.com
+    description: Render
+
+tags:
+  - name: Health
+    description: Liveness for Render and local checks
+  - name: GraphQL
+    description: Primary API. Send `{ query, variables, operationName }`
+  - name: Media
+    description: Admin image upload and public media bytes
+  - name: Payments
+    description: Sandbox completion. Production PhonePe uses redirects + GraphQL confirmPayment
+
+security:
+  - bearerAuth: []
+
+paths:
+  /healthz:
+    get:
+      tags: [Health]
+      operationId: healthz
+      summary: Liveness probe
+      description: Used by Render health checks. No auth.
+      security: []
+      responses:
+        '200':
+          description: Process is up
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              example:
+                ok: true
+                service: boutique-market
+
+  /openapi.yaml:
+    get:
+      tags: [Health]
+      operationId: getOpenApi
+      summary: Download this OpenAPI document
+      security: []
+      responses:
+        '200':
+          description: OpenAPI 3.1 YAML
+          content:
+            application/yaml:
+              schema:
+                type: string
+
+  /graphql:
+    post:
+      tags: [GraphQL]
+      operationId: graphql
+      summary: GraphQL endpoint (all storefront and admin operations)
+      description: |
+        Apollo Server 4 on Express. Thin resolvers call application use cases.
+
+        ## Queries
+        | Operation | Auth | Purpose |
+        |-----------|------|---------|
+        | `store` | public | White-label branding for the SPA |
+        | `products` | public | Catalog with category / featured / search |
+        | `product` | public | One piece by `id` or `slug` |
+        | `me` | optional | Current user or null |
+        | `myCart` | customer | Bag for the JWT user |
+        | `myOrders` | customer | Order history |
+        | `order` | owner or admin | One order |
+        | `adminOrders` | admin | All orders |
+
+        ## Mutations
+        | Operation | Auth | Purpose |
+        |-----------|------|---------|
+        | `register` / `login` | public | JWT (`AuthPayload`) |
+        | `addToCart` / `updateCartItem` / `removeCartItem` | customer | Bag |
+        | `checkout` | customer | Create `PENDING_PAYMENT` order + payment redirect |
+        | `confirmPayment` | public (knows merchantOrderId) | Server-side status check → `PAID` |
+        | `createProduct` / `updateProduct` / `deleteProduct` | admin | Catalog |
+        | `updateStore` | admin | Branding |
+        | `updateOrderStatus` | admin | Fulfillment |
+
+        GraphQL errors use `extensions.code`: `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`,
+        `OUT_OF_STOCK`, `EMPTY_CART`, `CONFLICT`, `INVALID_QUANTITY`, `BAD_USER_INPUT`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GraphQLRequest'
+            examples:
+              store:
+                summary: Load boutique branding
+                value:
+                  query: |
+                    query Store {
+                      store {
+                        storeName tagline phone city logoUrl accentColor currency
+                      }
+                    }
+              products:
+                summary: List featured products
+                value:
+                  query: |
+                    query Products($category: Category, $featured: Boolean) {
+                      products(category: $category, featured: $featured) {
+                        total
+                        items { id slug title category priceInPaise compareAtPaise stock images { url alt } }
+                      }
+                    }
+                  variables:
+                    featured: true
+              product:
+                summary: Product by slug
+                value:
+                  query: |
+                    query Product($slug: String!) {
+                      product(slug: $slug) {
+                        id title description priceInPaise sizes stock images { url alt }
+                      }
+                    }
+                  variables:
+                    slug: banarasi-silk-saree-gold
+              login:
+                summary: Sign in (demo shopper)
+                value:
+                  query: |
+                    mutation Login($input: LoginInput!) {
+                      login(input: $input) { token user { id email name role } }
+                    }
+                  variables:
+                    input:
+                      email: customer@example.com
+                      password: ChangeMe!shop
+              addToCart:
+                summary: Add a piece to the bag
+                value:
+                  query: |
+                    mutation AddToCart($productId: ID!, $quantity: Int!, $size: String) {
+                      addToCart(productId: $productId, quantity: $quantity, size: $size) {
+                        subtotalPaise
+                        items { id title quantity size imageUrl }
+                      }
+                    }
+                  variables:
+                    productId: replace-with-product-id
+                    quantity: 1
+                    size: Free size
+              checkout:
+                summary: Start PhonePe or card checkout
+                value:
+                  query: |
+                    mutation Checkout($input: CheckoutInput!) {
+                      checkout(input: $input) {
+                        redirectUrl
+                        order { id payment { merchantOrderId method state } }
+                      }
+                    }
+                  variables:
+                    input:
+                      method: PHONEPE
+                      shipping:
+                        name: Demo shopper
+                        phone: "9908185597"
+                        line1: Plot LIG-140, KPHB 7th Phase
+                        city: Hyderabad
+                        state: Telangana
+                        pin: "500072"
+              confirmPayment:
+                summary: Confirm after gateway return (source of truth)
+                value:
+                  query: |
+                    mutation ConfirmPayment($merchantOrderId: String!) {
+                      confirmPayment(merchantOrderId: $merchantOrderId) {
+                        id status subtotalPaise payment { state method }
+                      }
+                    }
+                  variables:
+                    merchantOrderId: BMmswscikwf1ae46e2
+              createProduct:
+                summary: Admin — add a piece (after REST upload)
+                value:
+                  query: |
+                    mutation CreateProduct($input: ProductInput!) {
+                      createProduct(input: $input) { id slug title }
+                    }
+                  variables:
+                    input:
+                      title: Raw silk blouse
+                      description: Lined, boat neck
+                      category: BLOUSE
+                      priceInPaise: 249900
+                      fabric: Raw silk
+                      color: Cream
+                      sizes: ["32", "34", "36"]
+                      stock: 8
+                      featured: true
+                      images:
+                        - url: /api/media/abc
+                          alt: Raw silk blouse
+      responses:
+        '200':
+          description: GraphQL envelope (HTTP 200 even for many domain errors)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphQLResponse'
+              examples:
+                success:
+                  value:
+                    data:
+                      store:
+                        storeName: Your Boutique
+                        tagline: Ethnic wear, made personal
+                error:
+                  value:
+                    errors:
+                      - message: Please sign in to continue
+                        extensions:
+                          code: UNAUTHORIZED
+
+  /api/uploads:
+    post:
+      tags: [Media]
+      operationId: uploadImage
+      summary: Admin image upload
+      description: |
+        Multipart field name is `file`. Max 2MB. Returns `{ id, url }` where `url` is
+        `/api/media/:id`. Pass that URL into `createProduct.images`.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: JPEG, PNG, or WebP, max 2MB
+      responses:
+        '200':
+          description: Stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoredImage'
+              example:
+                id: 66f0a1
+                url: /api/media/66f0a1
+        '400':
+          description: Missing file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '401':
+          description: Missing or invalid JWT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '403':
+          description: Not an admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+
+  /api/media/{id}:
+    get:
+      tags: [Media]
+      operationId: getMedia
+      summary: Public product image bytes
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Id returned from POST /api/uploads
+      responses:
+        '200':
+          description: Image body
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Unknown id
+
+  /api/pay/sandbox/complete:
+    post:
+      tags: [Payments]
+      operationId: completeSandboxPayment
+      summary: Record sandbox PhonePe or card result
+      description: |
+        Used only when PhonePe merchant keys are unset. The SPA posts here, then
+        redirects to `/pay/return?merchantOrderId=…` which runs GraphQL `confirmPayment`.
+        `confirmPayment` calls `PaymentGateway.getStatus` — that is the source of truth.
+        Do not mark orders paid from this REST call alone.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SandboxCompleteInput'
+            examples:
+              success:
+                value:
+                  merchantOrderId: BMmswscikwf1ae46e2
+                  state: COMPLETED
+              decline:
+                value:
+                  merchantOrderId: BMmswscikwf1ae46e2
+                  state: FAILED
+      responses:
+        '200':
+          description: Recorded in the in-memory sandbox map
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SandboxCompleteResult'
+        '400':
+          description: merchantOrderId missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token from login/register. Payload `{ sub, email, role }`.
+
+  schemas:
+    Health:
+      type: object
+      required: [ok, service]
+      properties:
+        ok:
+          type: boolean
+        service:
+          type: string
+          example: boutique-market
+
+    HttpError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          examples:
+            - file is required
+            - Please sign in to continue
+
+    StoredImage:
+      type: object
+      required: [id, url]
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+          description: Path the storefront can use as ProductImage.url
+          example: /api/media/66f0a1
+
+    SandboxCompleteInput:
+      type: object
+      required: [merchantOrderId]
+      properties:
+        merchantOrderId:
+          type: string
+          maxLength: 63
+          description: Id created at checkout (prefix BM…)
+        state:
+          type: string
+          enum: [COMPLETED, FAILED]
+          default: COMPLETED
+
+    SandboxCompleteResult:
+      type: object
+      required: [ok, merchantOrderId, state]
+      properties:
+        ok:
+          type: boolean
+        merchantOrderId:
+          type: string
+        state:
+          type: string
+          enum: [COMPLETED, FAILED]
+
+    GraphQLRequest:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+          description: GraphQL document
+        operationName:
+          type: string
+        variables:
+          type: object
+          additionalProperties: true
+
+    GraphQLError:
+      type: object
+      properties:
+        message:
+          type: string
+        path:
+          type: array
+          items:
+            oneOf:
+              - type: string
+              - type: integer
+        extensions:
+          type: object
+          properties:
+            code:
+              type: string
+              enum:
+                - UNAUTHORIZED
+                - FORBIDDEN
+                - NOT_FOUND
+                - OUT_OF_STOCK
+                - EMPTY_CART
+                - CONFLICT
+                - INVALID_QUANTITY
+                - BAD_USER_INPUT
+                - INTERNAL_SERVER_ERROR
+
+    GraphQLResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          additionalProperties: true
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphQLError'
+
+    Category:
+      type: string
+      enum: [SAREE, BLOUSE, LEHENGA, KURTA, DUPATTA, ACCESSORY]
+
+    OrderStatus:
+      type: string
+      enum: [PENDING_PAYMENT, PAID, FULFILLING, SHIPPED, DELIVERED, CANCELLED]
+
+    PaymentMethod:
+      type: string
+      enum: [PHONEPE, CARD]
+
+    PaymentState:
+      type: string
+      enum: [PENDING, COMPLETED, FAILED]
+
+    UserRole:
+      type: string
+      enum: [CUSTOMER, ADMIN]
+
+    ProductImage:
+      type: object
+      required: [id, url, alt]
+      properties:
+        id: { type: string }
+        url: { type: string }
+        alt: { type: string }
+
+    Product:
+      type: object
+      required: [id, slug, title, category, priceInPaise, images, stock]
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        title: { type: string }
+        description: { type: string }
+        category:
+          $ref: '#/components/schemas/Category'
+        priceInPaise:
+          type: integer
+          minimum: 0
+          description: Price in paise (₹8,999 → 899900)
+        compareAtPaise:
+          type: integer
+          nullable: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImage'
+        fabric: { type: string }
+        color: { type: string }
+        sizes:
+          type: array
+          items: { type: string }
+        stock:
+          type: integer
+          minimum: 0
+        featured: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    Store:
+      type: object
+      description: White-label settings. The React UI reads only this object for the boutique name.
+      properties:
+        storeName: { type: string }
+        tagline: { type: string }
+        ownerName: { type: string }
+        phone: { type: string }
+        whatsapp: { type: string }
+        email: { type: string }
+        addressLine: { type: string }
+        city: { type: string }
+        state: { type: string }
+        pin: { type: string }
+        logoUrl: { type: string }
+        accentColor: { type: string, example: '#c4a35a' }
+        currency: { type: string, example: INR }
+
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string, format: email }
+        name: { type: string }
+        role:
+          $ref: '#/components/schemas/UserRole'
+
+    AuthPayload:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+          description: JWT — store as bm_token in the browser
+        user:
+          $ref: '#/components/schemas/User'
+
+    CartItem:
+      type: object
+      properties:
+        id: { type: string }
+        productId: { type: string }
+        title: { type: string }
+        priceInPaise: { type: integer }
+        quantity: { type: integer, minimum: 1 }
+        size: { type: string, nullable: true }
+        imageUrl: { type: string }
+
+    Cart:
+      type: object
+      properties:
+        id: { type: string }
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        subtotalPaise:
+          type: integer
+          description: Sum of priceInPaise × quantity
+
+    ShippingAddress:
+      type: object
+      required: [name, phone, line1, city, state, pin]
+      properties:
+        name: { type: string, minLength: 2 }
+        phone: { type: string, minLength: 10, maxLength: 16 }
+        line1: { type: string, minLength: 4 }
+        city: { type: string }
+        state: { type: string }
+        pin: { type: string, minLength: 4, maxLength: 10 }
+
+    PaymentInfo:
+      type: object
+      properties:
+        method:
+          $ref: '#/components/schemas/PaymentMethod'
+        provider:
+          type: string
+          enum: [PHONEPE, SANDBOX]
+        merchantOrderId: { type: string }
+        state:
+          $ref: '#/components/schemas/PaymentState'
+
+    Order:
+      type: object
+      properties:
+        id: { type: string }
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        shipping:
+          $ref: '#/components/schemas/ShippingAddress'
+        subtotalPaise: { type: integer }
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        payment:
+          $ref: '#/components/schemas/PaymentInfo'
+        createdAt: { type: string, format: date-time }
+
+    CheckoutPayload:
+      type: object
+      required: [order, redirectUrl]
+      properties:
+        order:
+          $ref: '#/components/schemas/Order'
+        redirectUrl:
+          type: string
+          format: uri
+          description: PhonePe hosted page or /pay/sandbox

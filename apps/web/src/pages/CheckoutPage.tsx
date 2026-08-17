@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useMutation, useQuery } from '@apollo/client'
 import { CHECKOUT, ME } from '../graphql/operations'
 import { formatINR } from '../lib/money'
+import type { CartItem } from '../auth'
 
 export function CheckoutPage() {
   const navigate = useNavigate()
@@ -10,12 +11,16 @@ export function CheckoutPage() {
   const [checkout, { loading }] = useMutation(CHECKOUT)
   const [method, setMethod] = useState<'PHONEPE' | 'CARD'>('PHONEPE')
   const [error, setError] = useState('')
+  const items = (data?.myCart?.items ?? []) as CartItem[]
+  const subtotal = data?.myCart?.subtotalPaise ?? 0
 
   if (!data?.me) {
     return (
       <main className="page">
         <p>
-          <Link to="/login?next=/checkout">Sign in</Link> to checkout.
+          <Link className="btn" to="/login?next=/checkout">
+            Sign in to checkout
+          </Link>
         </p>
       </main>
     )
@@ -49,52 +54,78 @@ export function CheckoutPage() {
   }
 
   return (
-    <main className="page">
-      <h1>Checkout</h1>
-      <p className="muted">Pay {formatINR(data.myCart?.subtotalPaise ?? 0)} with PhonePe or card.</p>
-      <form className="form wide" onSubmit={(e) => void onSubmit(e)}>
-        <label>
-          Full name
-          <input name="name" required defaultValue={data.me.name} />
-        </label>
-        <label>
-          Phone
-          <input name="phone" required placeholder="9908185597" />
-        </label>
-        <label>
-          Address
-          <input name="line1" required />
-        </label>
-        <label>
-          City
-          <input name="city" required />
-        </label>
-        <label>
-          State
-          <input name="state" required defaultValue="Telangana" />
-        </label>
-        <label>
-          PIN
-          <input name="pin" required />
-        </label>
-        <div className="filters">
-          <button type="button" className={`chip ${method === 'PHONEPE' ? 'on' : ''}`} onClick={() => setMethod('PHONEPE')}>
-            PhonePe / UPI
+    <main className="page bag-layout">
+      <div>
+        <p className="eyebrow">Checkout</p>
+        <h1>Delivery &amp; payment</h1>
+        <form className="form wide" onSubmit={(e) => void onSubmit(e)}>
+          <div className="form-grid">
+            <label>
+              Full name
+              <input name="name" required defaultValue={data.me.name} />
+            </label>
+            <label>
+              Phone
+              <input name="phone" required placeholder="9908185597" defaultValue="9908185597" />
+            </label>
+          </div>
+          <label>
+            Address
+            <input name="line1" required defaultValue="Plot LIG-140, KPHB 7th Phase" />
+          </label>
+          <div className="form-grid three">
+            <label>
+              City
+              <input name="city" required defaultValue="Hyderabad" />
+            </label>
+            <label>
+              State
+              <input name="state" required defaultValue="Telangana" />
+            </label>
+            <label>
+              PIN
+              <input name="pin" required defaultValue="500072" />
+            </label>
+          </div>
+          <p className="eyebrow">Pay with</p>
+          <div className="pay-methods">
+            <button type="button" className={method === 'PHONEPE' ? 'on' : ''} onClick={() => setMethod('PHONEPE')}>
+              <strong>PhonePe / UPI</strong>
+              <span>Pay in the PhonePe checkout</span>
+            </button>
+            <button type="button" className={method === 'CARD' ? 'on' : ''} onClick={() => setMethod('CARD')}>
+              <strong>Card</strong>
+              <span>Visa, Mastercard, RuPay</span>
+            </button>
+          </div>
+          {error ? <p className="error">{error}</p> : null}
+          <button className="btn full" disabled={loading} type="submit">
+            {loading ? 'Opening payment…' : `Pay ${formatINR(subtotal)}`}
           </button>
-          <button type="button" className={`chip ${method === 'CARD' ? 'on' : ''}`} onClick={() => setMethod('CARD')}>
-            Card
+          <button className="text-btn" type="button" onClick={() => navigate('/cart')}>
+            Return to bag
           </button>
-        </div>
-        {error ? <p className="error">{error}</p> : null}
-        <button className="btn" disabled={loading} type="submit">
-          Continue to pay
-        </button>
-      </form>
-      <p>
-        <button className="btn ghost" type="button" onClick={() => navigate('/cart')}>
-          Back to bag
-        </button>
-      </p>
+        </form>
+      </div>
+      <aside className="summary">
+        <p className="eyebrow">Your pieces</p>
+        {items.map((item) => (
+          <div key={item.id} className="summary-item">
+            {item.imageUrl ? <img src={item.imageUrl} alt="" /> : null}
+            <div>
+              <p>{item.title}</p>
+              <p className="muted">
+                {item.size} · × {item.quantity}
+              </p>
+            </div>
+            <span>{formatINR(item.priceInPaise * item.quantity)}</span>
+          </div>
+        ))}
+        <p className="row total">
+          <span>Total</span>
+          <strong>{formatINR(subtotal)}</strong>
+        </p>
+      </aside>
     </main>
   )
 }

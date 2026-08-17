@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { ApolloServer } from '@apollo/server'
 import { expressMiddleware } from '@as-integrations/express4'
@@ -27,6 +28,21 @@ export async function createApp(services: Services, images: ImageStore) {
 
   app.get('/healthz', (_req, res) => {
     res.json({ ok: true, service: 'boutique-market' })
+  })
+
+  app.get('/openapi.yaml', (_req, res) => {
+    const here = path.dirname(fileURLToPath(import.meta.url))
+    const candidates = [
+      path.resolve(here, '../../../../../openapi/openapi.yaml'),
+      path.resolve(here, '../../../../../../openapi/openapi.yaml'),
+      path.resolve(process.env.STATIC_DIR ?? '', 'openapi.yaml'),
+    ]
+    const file = candidates.find((candidate) => candidate && existsSync(candidate))
+    if (!file) {
+      res.status(404).send('openapi.yaml not packaged')
+      return
+    }
+    res.type('text/yaml').sendFile(file)
   })
 
   app.use(
@@ -84,7 +100,7 @@ export async function createApp(services: Services, images: ImageStore) {
 
   app.use(express.static(staticDir))
   app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/graphql') || req.path.startsWith('/api') || req.path.startsWith('/healthz')) {
+    if (req.path.startsWith('/graphql') || req.path.startsWith('/api') || req.path.startsWith('/healthz') || req.path.startsWith('/openapi')) {
       next()
       return
     }

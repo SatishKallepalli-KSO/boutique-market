@@ -3,6 +3,11 @@ import { config } from './config.js'
 import { connectMongo, disconnectMongo } from './infrastructure/mongodb/connection.js'
 import { compose } from './composition.js'
 
+const img = (file: string, alt: string, extra: string[] = []) => [
+  { id: file, url: `/demo/${file}`, alt },
+  ...extra.map((name) => ({ id: name, url: `/demo/${name}`, alt })),
+]
+
 const demoProducts = [
   {
     slug: 'banarasi-silk-saree-gold',
@@ -16,7 +21,7 @@ const demoProducts = [
     sizes: ['Free size'],
     stock: 6,
     featured: true,
-    images: [{ id: '1', url: '/demo/saree-gold.svg', alt: 'Banarasi silk saree' }],
+    images: img('saree-gold.jpg', 'Banarasi silk saree', ['saree-red.jpg']),
   },
   {
     slug: 'kanjeevaram-saree-maroon',
@@ -30,7 +35,7 @@ const demoProducts = [
     sizes: ['Free size'],
     stock: 3,
     featured: true,
-    images: [{ id: '2', url: '/demo/saree-maroon.svg', alt: 'Kanjeevaram saree' }],
+    images: img('saree-maroon.jpg', 'Kanjeevaram saree', ['saree-gold.jpg']),
   },
   {
     slug: 'georgette-saree-ivory',
@@ -44,7 +49,21 @@ const demoProducts = [
     sizes: ['Free size'],
     stock: 12,
     featured: true,
-    images: [{ id: '3', url: '/demo/saree-ivory.svg', alt: 'Georgette saree' }],
+    images: img('saree-ivory.jpg', 'Georgette saree'),
+  },
+  {
+    slug: 'silk-saree-crimson',
+    title: 'Silk saree — crimson zari',
+    description: 'Rich crimson silk with gold zari pallu. Ready for festive evenings.',
+    category: 'SAREE' as Category,
+    priceInPaise: 649900,
+    compareAtPaise: null,
+    fabric: 'Silk',
+    color: 'Crimson',
+    sizes: ['Free size'],
+    stock: 7,
+    featured: false,
+    images: img('saree-red.jpg', 'Crimson silk saree', ['saree-maroon.jpg']),
   },
   {
     slug: 'raw-silk-blouse-32-40',
@@ -58,7 +77,7 @@ const demoProducts = [
     sizes: ['32', '34', '36', '38', '40'],
     stock: 18,
     featured: true,
-    images: [{ id: '4', url: '/demo/blouse-cream.svg', alt: 'Raw silk blouse' }],
+    images: img('blouse-cream.jpg', 'Raw silk blouse'),
   },
   {
     slug: 'maggam-blouse-navy',
@@ -72,7 +91,7 @@ const demoProducts = [
     sizes: ['32', '34', '36', '38'],
     stock: 8,
     featured: false,
-    images: [{ id: '5', url: '/demo/blouse-navy.svg', alt: 'Maggam blouse' }],
+    images: img('blouse-navy.jpg', 'Maggam blouse', ['blouse-cream.jpg']),
   },
   {
     slug: 'festive-lehenga-rose',
@@ -86,7 +105,21 @@ const demoProducts = [
     sizes: ['S', 'M', 'L'],
     stock: 4,
     featured: true,
-    images: [{ id: '6', url: '/demo/lehenga-rose.svg', alt: 'Festive lehenga' }],
+    images: img('lehenga-rose.jpg', 'Festive lehenga', ['lehenga-red.jpg']),
+  },
+  {
+    slug: 'bridal-lehenga-crimson',
+    title: 'Bridal lehenga — crimson',
+    description: 'Bridal consultation piece. Heavy work, dupatta, and fitted choli.',
+    category: 'LEHENGA' as Category,
+    priceInPaise: 2499900,
+    compareAtPaise: null,
+    fabric: 'Silk + net',
+    color: 'Crimson',
+    sizes: ['S', 'M', 'L', 'XL'],
+    stock: 2,
+    featured: true,
+    images: img('lehenga-bridal.jpg', 'Bridal lehenga', ['gallery-bridal.jpg', 'lehenga-red.jpg']),
   },
   {
     slug: 'cotton-kurta-sage',
@@ -100,7 +133,21 @@ const demoProducts = [
     sizes: ['S', 'M', 'L', 'XL'],
     stock: 20,
     featured: false,
-    images: [{ id: '7', url: '/demo/kurta-sage.svg', alt: 'Cotton kurta' }],
+    images: img('kurta-sage.jpg', 'Cotton kurta'),
+  },
+  {
+    slug: 'linen-kurta-ivory',
+    title: 'Linen kurta — ivory',
+    description: 'Relaxed ivory linen kurta. Workdays, travel, and temple visits.',
+    category: 'KURTA' as Category,
+    priceInPaise: 219900,
+    compareAtPaise: 249900,
+    fabric: 'Linen',
+    color: 'Ivory',
+    sizes: ['S', 'M', 'L', 'XL'],
+    stock: 14,
+    featured: true,
+    images: img('kurta-ivory.jpg', 'Ivory linen kurta', ['kurta-sage.jpg']),
   },
   {
     slug: 'organza-dupatta-gold',
@@ -114,7 +161,35 @@ const demoProducts = [
     sizes: ['Free size'],
     stock: 15,
     featured: false,
-    images: [{ id: '8', url: '/demo/dupatta-gold.svg', alt: 'Organza dupatta' }],
+    images: img('dupatta-gold.jpg', 'Organza dupatta'),
+  },
+  {
+    slug: 'temple-jhumkas-gold',
+    title: 'Temple jhumkas — antique gold',
+    description: 'Statement jhumkas to finish a silk saree or blouse look.',
+    category: 'ACCESSORY' as Category,
+    priceInPaise: 249900,
+    compareAtPaise: 299900,
+    fabric: 'Gold-plated brass',
+    color: 'Antique gold',
+    sizes: ['One size'],
+    stock: 11,
+    featured: true,
+    images: img('accessory-gold.jpg', 'Temple jhumkas'),
+  },
+  {
+    slug: 'festive-kids-set',
+    title: 'Festive kids set — silk',
+    description: 'Little festive set for family functions. Soft lining, neat finish.',
+    category: 'ACCESSORY' as Category,
+    priceInPaise: 329900,
+    compareAtPaise: null,
+    fabric: 'Silk',
+    color: 'Festive mix',
+    sizes: ['2-3Y', '4-5Y', '6-7Y'],
+    stock: 9,
+    featured: false,
+    images: img('accessory-festive.jpg', 'Festive kids set'),
   },
 ]
 
@@ -137,15 +212,31 @@ function applyEnvOverrides() {
 export async function seedIfNeeded() {
   const { auth, stores, products } = compose()
   await auth.ensureAdmin(config.adminEmail, config.adminPassword, 'Store admin')
+  await auth.ensureCustomer('customer@example.com', 'ChangeMe!shop', 'Demo shopper')
 
   const store = await stores.get()
-  if (store.storeName === DEFAULT_STORE.storeName) {
+  if (store.storeName === DEFAULT_STORE.storeName || !store.logoUrl) {
     await stores.save(applyEnvOverrides())
   }
 
-  const existing = await products.list({}, 1, 1)
-  if (existing.total === 0 && config.seedDemo) {
-    for (const product of demoProducts) {
+  if (!config.seedDemo) return
+
+  for (const product of demoProducts) {
+    const existing = await products.findBySlug(product.slug)
+    if (existing) {
+      await products.update(existing.id, {
+        title: product.title,
+        description: product.description,
+        category: product.category,
+        priceInPaise: product.priceInPaise,
+        compareAtPaise: product.compareAtPaise,
+        fabric: product.fabric,
+        color: product.color,
+        sizes: product.sizes,
+        featured: product.featured,
+        images: product.images,
+      })
+    } else {
       await products.create(product)
     }
   }

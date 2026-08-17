@@ -42,7 +42,7 @@ export const DEMO_STORE: StoreSettings = {
   city: 'Hyderabad',
   state: 'Telangana',
   pin: '500072',
-  logoUrl: '',
+  logoUrl: '/brand/mark.png',
   accentColor: '#c4a35a',
   currency: 'INR',
 }

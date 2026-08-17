@@ -38,43 +38,45 @@ export function PaySandboxPage() {
   }
 
   return (
-    <main className="page">
+    <main className="page pay-wrap">
       <div className="pay-box">
-        <p className="muted">Sandbox checkout · {store.storeName}</p>
+        <p className="eyebrow">{store.storeName} · secure pay</p>
         <h1>{formatINR(amount)}</h1>
-        <p className="muted">Order {merchantOrderId}</p>
+        <p className="muted tiny">Reference {merchantOrderId}</p>
         {method === 'CARD' ? (
           <form className="form" onSubmit={(e) => void onCard(e)}>
+            <img className="pay-photo" src="/demo/accessory-gold.jpg" alt="" />
             <label>
               Card number
-              <input name="number" required placeholder="4111 1111 1111 1111" />
+              <input name="number" required placeholder="4111 1111 1111 1111" defaultValue="4111111111111111" />
             </label>
-            <label>
-              Expiry
-              <input name="exp" required placeholder="12/28" />
-            </label>
-            <label>
-              CVV
-              <input name="cvv" required placeholder="123" />
-            </label>
-            <p className="muted">Use any future expiry. Card ending 0002 fails; anything else succeeds.</p>
+            <div className="form-grid">
+              <label>
+                Expiry
+                <input name="exp" required placeholder="12/28" defaultValue="12/28" />
+              </label>
+              <label>
+                CVV
+                <input name="cvv" required placeholder="123" defaultValue="123" />
+              </label>
+            </div>
+            <p className="muted tiny">Card ending 0002 declines. Any other number succeeds.</p>
             {error ? <p className="error">{error}</p> : null}
-            <button className="btn" disabled={busy} type="submit">
+            <button className="btn full" disabled={busy} type="submit">
               Pay by card
             </button>
           </form>
         ) : (
           <>
-            <p>This is the PhonePe sandbox. No merchant KYC is configured, so payment is simulated.</p>
+            <img className="pay-photo" src="/brand/mark.png" alt="" />
+            <p>Complete payment in the PhonePe sandbox to confirm this order.</p>
             {error ? <p className="error">{error}</p> : null}
-            <button className="btn accent" disabled={busy} type="button" onClick={() => void complete('COMPLETED')}>
+            <button className="btn accent full" disabled={busy} type="button" onClick={() => void complete('COMPLETED')}>
               Pay with PhonePe
             </button>
-            <p>
-              <button className="btn ghost" disabled={busy} type="button" onClick={() => void complete('FAILED')}>
-                Simulate failure
-              </button>
-            </p>
+            <button className="text-btn" disabled={busy} type="button" onClick={() => void complete('FAILED')}>
+              Simulate a decline
+            </button>
           </>
         )}
       </div>

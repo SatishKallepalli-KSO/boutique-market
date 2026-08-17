@@ -11,7 +11,9 @@ Ruhi's Boutique appears only as **demo seed catalog**, so you can click through 
 
 | Doc | Why read it |
 |-----|-------------|
-| [docs/LEARNING.md](docs/LEARNING.md) | Path to get strong at this stack, mapped to this repo |
+| [**/docs** in the app](https://boutique-market-k7m7.onrender.com/docs) | Study guide: stack, endpoints, checkout logic, interview drills |
+| [openapi/openapi.yaml](openapi/openapi.yaml) | OpenAPI 3.1 — import into Postman (`/openapi.yaml`) |
+| [docs/api-reference.md](docs/api-reference.md) | REST + GraphQL surface cheat sheet |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Clean architecture, layers, request flow |
 | [docs/GRAPHQL.md](docs/GRAPHQL.md) | Schema, operations, auth on the context |
 | [docs/PAYMENTS.md](docs/PAYMENTS.md) | PhonePe + sandbox card/UPI |

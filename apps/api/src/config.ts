@@ -1,4 +1,9 @@
-import 'dotenv/config'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import dotenv from 'dotenv'
+
+dotenv.config({ path: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../.env') })
+dotenv.config()
 
 function required(name: string, fallback?: string): string {
   const value = process.env[name] ?? fallback

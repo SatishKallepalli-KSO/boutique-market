@@ -57,6 +57,17 @@ export class AuthUseCases {
     })
   }
 
+  async ensureCustomer(email: string, password: string, name: string) {
+    const existing = await this.users.findByEmail(email)
+    if (existing) return existing
+    return this.users.create({
+      email,
+      name,
+      passwordHash: await bcrypt.hash(password, 12),
+      role: 'CUSTOMER',
+    })
+  }
+
   private toAuth(user: User) {
     return {
       token: this.tokens.sign({ sub: user.id, email: user.email, role: user.role }),

@@ -22,6 +22,7 @@ COPY apps/api/package.json apps/api/
 COPY --from=build /repo/packages/shared/dist packages/shared/dist
 COPY --from=build /repo/apps/api/dist apps/api/dist
 COPY --from=build /repo/apps/web/dist /app/static
+COPY openapi/openapi.yaml /app/static/openapi.yaml
 RUN npm ci --omit=dev --workspace=@boutique-market/api --workspace=@boutique-market/shared \
   && chown -R app:app /app
 USER app

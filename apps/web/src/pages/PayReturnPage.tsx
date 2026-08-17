@@ -18,19 +18,24 @@ export function PayReturnPage() {
       .catch((err: Error) => setError(err.message))
   }, [confirm, merchantOrderId])
 
+  const paid = order?.status === 'PAID'
+
   return (
-    <main className="page">
-      <h1>{order?.status === 'PAID' ? 'Payment received' : 'Confirming payment'}</h1>
+    <main className="page empty">
+      <p className="eyebrow">{paid ? 'Thank you' : 'Payment'}</p>
+      <h1>{paid ? 'Your order is confirmed' : 'Confirming payment'}</h1>
       {order ? (
         <p>
-          Order <Link to={`/order/${order.id}`}>{order.id.slice(-8)}</Link> · {formatINR(order.subtotalPaise)} · {order.status}
+          Order <Link to={`/order/${order.id}`}>{order.id.slice(-8)}</Link> · {formatINR(order.subtotalPaise)}
         </p>
       ) : (
-        <p className="muted">Talking to the payment gateway…</p>
+        <p className="muted">Speaking with the gateway…</p>
       )}
       {error ? <p className="error">{error}</p> : null}
       <p>
-        <Link to="/orders">View orders</Link>
+        <Link className="btn" to={order ? `/order/${order.id}` : '/orders'}>
+          View order
+        </Link>
       </p>
     </main>
   )

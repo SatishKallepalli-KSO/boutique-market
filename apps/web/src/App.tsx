@@ -11,6 +11,7 @@ import { OrderPage } from './pages/OrderPage'
 import { AdminPage } from './pages/AdminPage'
 import { PaySandboxPage } from './pages/PaySandboxPage'
 import { PayReturnPage } from './pages/PayReturnPage'
+import { DocsPage } from './pages/DocsPage'
 
 export function App() {
   return (
@@ -26,6 +27,7 @@ export function App() {
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/order/:id" element={<OrderPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/docs" element={<DocsPage />} />
           <Route path="/pay/sandbox" element={<PaySandboxPage />} />
           <Route path="/pay/return" element={<PayReturnPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
