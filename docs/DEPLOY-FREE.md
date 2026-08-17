@@ -2,6 +2,17 @@
 
 Same shape as previous projects: **one Docker web service on Render Free**, database on a free cloud tier (Atlas instead of Neon).
 
+## Live service
+
+| | |
+|--|--|
+| Render service | `boutique-market` (`srv-da19cevqj5pc73cid58g`) |
+| URL | https://boutique-market-k7m7.onrender.com |
+| Dashboard | https://dashboard.render.com/web/srv-da19cevqj5pc73cid58g |
+| GitHub | https://github.com/SatishKallepalli-KSO/boutique-market |
+
+Set `APP_URL` to that Render URL (or your custom domain). The service needs `MONGODB_URI` from Atlas or it will fail the health check.
+
 ## 1. Atlas
 
 Create an M0 cluster. Put the SRV URI in `MONGODB_URI`.
