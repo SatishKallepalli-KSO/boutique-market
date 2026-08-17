@@ -45,3 +45,9 @@ The React UI reads branding from the GraphQL `store` query only.
 ## Deploy
 
 Same pattern as previous projects: one Render Docker web service + a free MongoDB Atlas cluster. See [docs/DEPLOY-FREE.md](docs/DEPLOY-FREE.md).
+
+**Render:** https://boutique-market-k7m7.onrender.com  
+**Dashboard:** https://dashboard.render.com/web/srv-da19cevqj5pc73cid58g  
+**GitHub:** https://github.com/SatishKallepalli-KSO/boutique-market
+
+Paste `MONGODB_URI` (Atlas M0) in the Render dashboard — same role Neon played on earlier sites — then the shop will stay up.
