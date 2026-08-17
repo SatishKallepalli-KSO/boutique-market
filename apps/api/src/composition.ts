@@ -14,17 +14,28 @@ import {
   MongoStoreRepository,
   MongoUserRepository,
 } from './infrastructure/mongodb/repositories.js'
+import {
+  MemoryCarts,
+  MemoryImageStore,
+  MemoryOrders,
+  MemoryProducts,
+  MemoryStore,
+  MemoryUsers,
+} from './infrastructure/memory/repositories.js'
+import { config } from './config.js'
 import type { Services } from './infrastructure/graphql/context.js'
 
-export function compose() {
-  const users = new MongoUserRepository()
-  const products = new MongoProductRepository()
-  const carts = new MongoCartRepository()
-  const orders = new MongoOrderRepository()
-  const stores = new MongoStoreRepository()
+let cached: ReturnType<typeof createGraph> | null = null
+
+function createGraph() {
+  const users = config.useMemoryDb ? new MemoryUsers() : new MongoUserRepository()
+  const products = config.useMemoryDb ? new MemoryProducts() : new MongoProductRepository()
+  const carts = config.useMemoryDb ? new MemoryCarts() : new MongoCartRepository()
+  const orders = config.useMemoryDb ? new MemoryOrders() : new MongoOrderRepository()
+  const stores = config.useMemoryDb ? new MemoryStore() : new MongoStoreRepository()
   const tokens = new JwtTokenService()
   const payments = createPaymentGateway()
-  const images = new MongoImageStore()
+  const images = config.useMemoryDb ? new MemoryImageStore() : new MongoImageStore()
 
   const services: Services = {
     users,
@@ -38,4 +49,9 @@ export function compose() {
   }
 
   return { services, images, products, stores, auth: services.auth }
+}
+
+export function compose() {
+  cached ??= createGraph()
+  return cached
 }

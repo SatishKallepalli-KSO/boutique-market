@@ -5,7 +5,11 @@ import { createApp } from './infrastructure/http/create-app.js'
 import { seedIfNeeded } from './seed.js'
 
 async function start() {
-  await connectMongo(config.mongodbUri)
+  if (config.useMemoryDb) {
+    console.log('No MONGODB_URI — using in-memory store (data resets on sleep). Set Atlas to persist.')
+  } else {
+    await connectMongo(config.mongodbUri)
+  }
   await seedIfNeeded()
   const { services, images } = compose()
   const app = await createApp(services, images)

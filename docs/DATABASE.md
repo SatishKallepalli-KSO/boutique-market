@@ -2,6 +2,8 @@
 
 MongoDB is the system of record. Locally: Docker Compose. Production: **MongoDB Atlas M0 free** — same role Neon Postgres played on earlier Render projects.
 
+If `MONGODB_URI` is unset (first Render boot), the API uses an **in-memory store** so the shop is reachable. Data resets when the free instance sleeps. Paste an Atlas URI to persist.
+
 ## Local
 
 ```bash

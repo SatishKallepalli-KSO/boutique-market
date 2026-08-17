@@ -11,7 +11,7 @@ function required(name: string, fallback?: string): string {
 export const config = {
   port: Number(process.env.PORT ?? 4000),
   nodeEnv: process.env.NODE_ENV ?? 'development',
-  mongodbUri: required('MONGODB_URI', 'mongodb://127.0.0.1:27017/boutique_market'),
+  mongodbUri: process.env.MONGODB_URI ?? '',
   appUrl: (process.env.APP_URL ?? 'http://localhost:5177').replace(/\/$/, ''),
   jwtSecret: required('JWT_SECRET', 'dev-only-change-me-boutique-market'),
   adminEmail: (process.env.ADMIN_EMAIL ?? 'admin@example.com').toLowerCase(),
@@ -34,6 +34,9 @@ export const config = {
     env: (process.env.PHONEPE_ENV ?? 'SANDBOX') as 'SANDBOX' | 'PRODUCTION',
     callbackUsername: process.env.PHONEPE_CALLBACK_USERNAME ?? '',
     callbackPassword: process.env.PHONEPE_CALLBACK_PASSWORD ?? '',
+  },
+  get useMemoryDb() {
+    return !this.mongodbUri || process.env.USE_MEMORY_DB === '1'
   },
   get isProd() {
     return this.nodeEnv === 'production'

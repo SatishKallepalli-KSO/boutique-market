@@ -1,7 +1,6 @@
 import { DEMO_STORE, DEFAULT_STORE, type Category } from '@boutique-market/shared'
 import { config } from './config.js'
 import { connectMongo, disconnectMongo } from './infrastructure/mongodb/connection.js'
-import { ProductModel } from './infrastructure/mongodb/models.js'
 import { compose } from './composition.js'
 
 const demoProducts = [
@@ -144,8 +143,8 @@ export async function seedIfNeeded() {
     await stores.save(applyEnvOverrides())
   }
 
-  const existing = await ProductModel.countDocuments()
-  if (existing === 0 && config.seedDemo) {
+  const existing = await products.list({}, 1, 1)
+  if (existing.total === 0 && config.seedDemo) {
     for (const product of demoProducts) {
       await products.create(product)
     }
@@ -153,9 +152,9 @@ export async function seedIfNeeded() {
 }
 
 async function run() {
-  await connectMongo(config.mongodbUri)
+  if (!config.useMemoryDb) await connectMongo(config.mongodbUri)
   await seedIfNeeded()
-  await disconnectMongo()
+  if (!config.useMemoryDb) await disconnectMongo()
   console.log('Seed complete')
 }
 
