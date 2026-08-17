@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800">
+  <rect width="600" height="800" fill="#1b2744"/>
+  <ellipse cx="300" cy="340" rx="140" ry="180" fill="#c4a35a" opacity=".35"/>
+  <text x="300" y="720" text-anchor="middle" fill="#f7f1e6" font-family="Georgia" font-size="28">Maggam blouse</text>
+</svg>

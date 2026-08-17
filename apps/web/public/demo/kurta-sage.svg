@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800">
+  <rect width="600" height="800" fill="#6d7a62"/>
+  <rect x="180" y="160" width="240" height="420" rx="20" fill="#dce3d2"/>
+  <text x="300" y="720" text-anchor="middle" fill="#f7f1e6" font-family="Georgia" font-size="28">Cotton kurta</text>
+</svg>

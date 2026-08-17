@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800">
+  <rect width="600" height="800" fill="#5a1220"/>
+  <rect x="0" y="620" width="600" height="80" fill="#c4a35a"/>
+  <text x="300" y="720" text-anchor="middle" fill="#f7f1e6" font-family="Georgia" font-size="28">Kanjeevaram</text>
+</svg>

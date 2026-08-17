@@ -1,0 +1,27 @@
+# Free-tier live stack on Render (web) + MongoDB Atlas (data)
+# Same pattern as previous projects: one Docker service, secrets in the dashboard.
+
+services:
+  - type: web
+    name: boutique-market
+    runtime: docker
+    plan: free
+    region: oregon
+    healthCheckPath: /healthz
+    envVars:
+      - key: APP_URL
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: SEED_DEMO
+        value: "1"
+      - key: PHONEPE_CLIENT_ID
+        sync: false
+      - key: PHONEPE_CLIENT_SECRET
+        sync: false

@@ -1,0 +1,27 @@
+{
+  "name": "boutique-market",
+  "private": true,
+  "version": "0.1.0",
+  "description": "White-label boutique e-commerce — React, TypeScript, Node, GraphQL, MongoDB",
+  "workspaces": [
+    "apps/web",
+    "apps/api",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev -w @boutique-market/api\" \"npm run dev -w @boutique-market/web\"",
+    "dev:api": "npm run dev -w @boutique-market/api",
+    "dev:web": "npm run dev -w @boutique-market/web",
+    "build": "npm run build -w @boutique-market/shared && npm run build -w @boutique-market/api && npm run build -w @boutique-market/web",
+    "lint": "npm run lint -w @boutique-market/web && npm run lint -w @boutique-market/api",
+    "typecheck": "npm run typecheck -w @boutique-market/shared && npm run typecheck -w @boutique-market/api && npm run typecheck -w @boutique-market/web",
+    "test": "npm run build -w @boutique-market/shared && npm run test -w @boutique-market/api",
+    "seed": "npm run seed -w @boutique-market/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,26 @@
+services:
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/boutique_market
+      APP_URL: http://localhost:4000
+      JWT_SECRET: local-compose-secret-change-me
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_PASSWORD: ChangeMe!admin
+      SEED_DEMO: "1"
+    depends_on:
+      - mongo
+
+volumes:
+  mongo_data:
